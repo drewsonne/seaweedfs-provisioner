@@ -10,6 +10,7 @@ from typing import Any
 
 import buckets  # noqa: F401 — registers SeaweedfsBucket handlers
 import kopf
+import users  # noqa: F401  (registers handlers)
 
 
 @kopf.on.startup()

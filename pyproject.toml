@@ -43,6 +43,7 @@ unfixable = []
     "INP001",   # controller/ is not a package
     "PLC0415",  # imports inside handlers to avoid circular deps
     "PLR0913",  # kopf handlers have many params by design
+    "PLR0917",  # ditto, positional
     "PLR2004",  # magic values in status code checks
     "TRY003",   # long messages in TemporaryError are fine for kopf
 ]
