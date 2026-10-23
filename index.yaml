@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  seaweedfs-provisioner:
+  - apiVersion: v2
+    appVersion: 0.0.4
+    created: "2026-10-23T10:17:12.900315611Z"
+    description: Provision SeaweedFS buckets and bucket-limited keys via CRDs
+    digest: 6f8d2e10ac1a0a633cf17a15b5e7ada8c785dfa68093d51338af31f4b38babb3
+    name: seaweedfs-provisioner
+    type: application
+    urls:
+    - https://drewsonne.github.io/seaweedfs-provisioner/seaweedfs-provisioner-0.0.4.tgz
+    version: 0.0.4
+generated: "2026-10-23T10:17:12.899932047Z"
