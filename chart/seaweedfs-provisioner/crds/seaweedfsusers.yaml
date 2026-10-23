@@ -1,0 +1,69 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: seaweedfsusers.seaweedfs.sonne.zone
+spec:
+  group: seaweedfs.sonne.zone
+  scope: Namespaced
+  names:
+    plural: seaweedfsusers
+    singular: seaweedfsuser
+    kind: SeaweedfsUser
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Buckets
+          type: string
+          jsonPath: .spec.buckets
+        - name: Access
+          type: string
+          jsonPath: .spec.access
+        - name: Ready
+          type: boolean
+          jsonPath: .status.ready
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          required: ["spec"]
+          properties:
+            spec:
+              type: object
+              required: ["secretName"]
+              x-kubernetes-validations:
+                - rule: "has(self.bucket) != has(self.buckets)"
+                  message: "set exactly one of bucket or buckets"
+              properties:
+                bucket:
+                  type: string
+                  description: "Single bucket the user may access. Mutually exclusive with buckets."
+                buckets:
+                  type: array
+                  description: "Buckets the user may access. Mutually exclusive with bucket."
+                  minItems: 1
+                  items:
+                    type: string
+                access:
+                  type: string
+                  description: "Access level on the bucket(s)."
+                  enum:
+                    - read-write
+                    - read-only
+                  default: read-write
+                secretName:
+                  type: string
+                  description: "Name of the Secret to store access_key, secret_key and endpoint in."
+                  maxLength: 253
+                secretNamespace:
+                  type: string
+                  description: "Namespace for the Secret. Defaults to the CR's namespace."
+                  maxLength: 63
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true

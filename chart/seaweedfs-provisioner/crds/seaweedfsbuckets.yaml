@@ -1,0 +1,45 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: seaweedfsbuckets.seaweedfs.sonne.zone
+spec:
+  group: seaweedfs.sonne.zone
+  scope: Namespaced
+  names:
+    plural: seaweedfsbuckets
+    singular: seaweedfsbucket
+    kind: SeaweedfsBucket
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Bucket
+          type: string
+          jsonPath: .metadata.name
+        - name: Versioning
+          type: boolean
+          jsonPath: .spec.versioning
+        - name: Ready
+          type: boolean
+          jsonPath: .status.ready
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          required: ["spec"]
+          properties:
+            spec:
+              type: object
+              properties:
+                versioning:
+                  type: boolean
+                  description: "Whether to enable versioning on the bucket. Defaults to false."
+                  default: false
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
