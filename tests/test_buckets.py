@@ -14,6 +14,11 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
+# kopf decorators type handlers as strict callbacks; tests call them directly.
+delete_fn: Any = buckets.delete_fn
+check_drift: Any = buckets.check_drift
+
+
 def _err(code: str, op: str = "Op") -> ClientError:
     return ClientError({"Error": {"Code": code, "Message": "x"}}, op)
 
@@ -92,7 +97,7 @@ def test_unsupported_versioning_is_permanent_error() -> None:
 
 def test_delete_makes_no_s3_call() -> None:
     with patch.object(buckets, "s3_client") as factory:
-        buckets.delete_fn(name="b", logger=MagicMock())
+        delete_fn(name="b", logger=MagicMock())
 
     factory.assert_not_called()
 
@@ -101,7 +106,7 @@ def test_drift_recreates_missing_bucket() -> None:
     client = _client(exists=False)
 
     with patch.object(buckets, "s3_client", return_value=client):
-        result = buckets.check_drift(spec={}, name="b", logger=MagicMock())
+        result = check_drift(spec={}, name="b", logger=MagicMock())
 
     client.create_bucket.assert_called_once_with(Bucket="b")
     assert result is not None
@@ -110,4 +115,4 @@ def test_drift_recreates_missing_bucket() -> None:
 
 def test_drift_none_when_in_sync() -> None:
     with patch.object(buckets, "s3_client", return_value=_client(exists=True)):
-        assert buckets.check_drift(spec={}, name="b", logger=MagicMock()) is None
+        assert check_drift(spec={}, name="b", logger=MagicMock()) is None
