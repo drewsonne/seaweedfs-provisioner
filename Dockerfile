@@ -9,7 +9,7 @@ RUN uv pip install --system --no-cache .
 
 COPY controller/ .
 
-RUN useradd --system --no-create-home --user-group operator
-USER operator
+RUN useradd --system --no-create-home --uid 10001 --user-group provisioner
+USER provisioner
 
 CMD ["kopf", "run", "--all-namespaces", "--liveness=http://0.0.0.0:8080/healthz", "main.py"]
