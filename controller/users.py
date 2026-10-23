@@ -163,3 +163,80 @@ def update_fn(
 ) -> None:
     _reconcile(spec, body, name, namespace, logger, patch)
     _drop_old_secret(old, spec, namespace, logger)
+
+
+def _tolerate_missing(action: str, call: Any, **kwargs: str) -> None:
+    try:
+        call(**kwargs)
+    except ClientError as exc:
+        if not is_not_found(exc):
+            raise temporary(action, exc) from exc
+
+
+@kopf.on.delete(
+    CRD_GROUP, CRD_VERSION, "seaweedfsusers", retries=3, backoff=15, timeout=120
+)
+def delete_fn(
+    spec: kopf.Spec,
+    name: str,
+    namespace: str | None,
+    logger: kopf.Logger,
+    **_: Any,
+) -> None:
+    """Remove the user's keys, policy, user and Secret. Buckets are never touched."""
+    iam = iam_client()
+    try:
+        keys = iam.list_access_keys(UserName=name)["AccessKeyMetadata"]
+    except ClientError as exc:
+        if not is_not_found(exc):
+            raise temporary(f"listing keys for {name!r}", exc) from exc
+        keys = []
+    for key in keys:
+        _tolerate_missing(
+            f"deleting key for {name!r}",
+            iam.delete_access_key,
+            UserName=name,
+            AccessKeyId=key["AccessKeyId"],
+        )
+    _tolerate_missing(
+        f"deleting policy for {name!r}",
+        iam.delete_user_policy,
+        UserName=name,
+        PolicyName=POLICY_NAME,
+    )
+    _tolerate_missing(f"deleting user {name!r}", iam.delete_user, UserName=name)
+    logger.info("Deleted SeaweedFS user %r", name)
+    if namespace is not None:
+        delete_secret(
+            spec.get("secretNamespace", namespace), spec["secretName"], logger
+        )
+
+
+@kopf.timer(
+    CRD_GROUP,
+    CRD_VERSION,
+    "seaweedfsusers",
+    interval=300,
+    initial_delay=60,
+    idle=30,
+)
+def check_drift(
+    spec: kopf.Spec,
+    body: kopf.Body,
+    name: str,
+    namespace: str | None,
+    logger: kopf.Logger,
+    **_: Any,
+) -> dict[str, Any] | None:
+    """Re-run the upsert if the SeaweedFS user went missing."""
+    if namespace is None:
+        return None
+    try:
+        iam_client().get_user(UserName=name)
+    except ClientError as exc:
+        if not is_not_found(exc):
+            raise temporary(f"checking user {name!r}", exc) from exc
+        logger.warning("Drift detected: user %r is missing, recreating", name)
+        _upsert_user(spec, body, name, namespace, logger)
+        return {"ready": True, "drift": True, "driftReason": "missing"}
+    return None

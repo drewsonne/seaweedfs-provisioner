@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Any
 from unittest.mock import MagicMock
 
 import kopf
@@ -126,3 +127,70 @@ def test_secret_rename_deletes_old_secret(monkeypatch: pytest.MonkeyPatch) -> No
     )
 
     delete.assert_called_once_with("ns", "old", LOGGER)
+
+
+MISSING = ClientError({"Error": {"Code": "NoSuchEntity"}}, "Op")
+
+
+def _delete(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
+    delete = MagicMock()
+    monkeypatch.setattr(users, "delete_secret", delete)
+    fn: Any = users.delete_fn
+    fn(spec=_spec(), name="bob", namespace="ns", logger=LOGGER)
+    return delete
+
+
+def test_delete_removes_keys_policy_user_then_secret(
+    env: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    env["iam"].list_access_keys.return_value = {
+        "AccessKeyMetadata": [{"AccessKeyId": "A"}, {"AccessKeyId": "B"}]
+    }
+    order = MagicMock()
+    order.attach_mock(env["iam"].delete_access_key, "key")
+    order.attach_mock(env["iam"].delete_user_policy, "policy")
+    order.attach_mock(env["iam"].delete_user, "user")
+
+    delete = _delete(monkeypatch)
+
+    assert [c[0] for c in order.mock_calls] == ["key", "key", "policy", "user"]
+    delete.assert_called_once_with("ns", "s", LOGGER)
+
+
+def test_delete_of_absent_user_succeeds(
+    env: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    env["iam"].list_access_keys.side_effect = MISSING
+    env["iam"].delete_user_policy.side_effect = MISSING
+    env["iam"].delete_user.side_effect = MISSING
+
+    delete = _delete(monkeypatch)
+
+    delete.assert_called_once()
+
+
+@pytest.mark.usefixtures("env")
+def test_delete_never_calls_s3(monkeypatch: pytest.MonkeyPatch) -> None:
+    s3 = MagicMock()
+    monkeypatch.setattr("common.s3_client", s3, raising=False)
+    _delete(monkeypatch)
+    s3.assert_not_called()
+    assert not hasattr(users, "s3_client")
+
+
+def test_drift_recreates_missing_user(env: dict) -> None:
+    env["iam"].get_user.side_effect = MISSING
+    fn: Any = users.check_drift
+
+    result = fn(spec=_spec(), body=BODY, name="bob", namespace="ns", logger=LOGGER)
+
+    env["iam"].create_user.assert_called_once_with(UserName="bob")
+    assert result["driftReason"] == "missing"
+
+
+def test_drift_none_when_user_present(env: dict) -> None:
+    fn: Any = users.check_drift
+    assert (
+        fn(spec=_spec(), body=BODY, name="bob", namespace="ns", logger=LOGGER) is None
+    )
+    env["iam"].create_user.assert_not_called()
