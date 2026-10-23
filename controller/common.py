@@ -35,8 +35,6 @@ RW_ACTIONS = [
     "s3:DeleteObject",
     "s3:ListBucket",
     "s3:GetBucketLocation",
-    "s3:ListBucketMultipartUploads",
-    "s3:ListMultipartUploadParts",
     "s3:AbortMultipartUpload",
 ]
 RO_ACTIONS = ["s3:Get*", "s3:List*"]

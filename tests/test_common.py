@@ -24,7 +24,6 @@ def test_policy_read_write_one_bucket() -> None:
 
     assert st["Resource"] == ["arn:aws:s3:::a", "arn:aws:s3:::a/*"]
     assert {"s3:GetObject", "s3:PutObject", "s3:DeleteObject"} <= set(st["Action"])
-    assert "s3:ListBucketMultipartUploads" in st["Action"]
 
 
 def test_policy_two_buckets() -> None:

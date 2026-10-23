@@ -57,6 +57,7 @@ unfixable = []
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["controller"]
+markers = ["integration: needs a real SeaweedFS (set SEAWEEDFS_IT=1)"]
 
 [tool.ty.environment]
 extra-paths = ["controller"]
