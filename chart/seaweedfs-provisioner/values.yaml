@@ -1,0 +1,15 @@
+image:
+  repository: ghcr.io/drewsonne/seaweedfs-provisioner
+  # Defaults to the chart's appVersion
+  tag: ""
+
+seaweedfs:
+  # SeaweedFS S3 endpoint (host:port, no scheme)
+  endpoint: seaweedfs-s3.seaweedfs.svc.cluster.local:8333
+  # Whether to use TLS for the in-cluster connection
+  secure: false
+  # Secret in the release namespace holding the SeaweedFS admin key
+  credentialsSecret:
+    name: seaweedfs-admin
+    accessKeyKey: access_key
+    secretKeyKey: secret_key

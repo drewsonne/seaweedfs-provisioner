@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: seaweedfs-provisioner
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: seaweedfs-provisioner
+  template:
+    metadata:
+      labels:
+        app: seaweedfs-provisioner
+    spec:
+      serviceAccountName: seaweedfs-provisioner
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        # The image user is non-numeric, so the kubelet needs an explicit uid
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: controller
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 5
+          env:
+            - name: SEAWEEDFS_ENDPOINT
+              value: {{ .Values.seaweedfs.endpoint | quote }}
+            - name: SEAWEEDFS_SECURE
+              value: {{ .Values.seaweedfs.secure | quote }}
+            - name: SEAWEEDFS_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.seaweedfs.credentialsSecret.name }}
+                  key: {{ .Values.seaweedfs.credentialsSecret.accessKeyKey }}
+            - name: SEAWEEDFS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.seaweedfs.credentialsSecret.name }}
+                  key: {{ .Values.seaweedfs.credentialsSecret.secretKeyKey }}

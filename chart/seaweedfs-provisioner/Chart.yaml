@@ -1,0 +1,6 @@
+apiVersion: v2
+name: seaweedfs-provisioner
+description: Provision SeaweedFS buckets and bucket-limited keys via CRDs
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

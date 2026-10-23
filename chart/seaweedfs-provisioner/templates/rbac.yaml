@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: seaweedfs-provisioner
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: seaweedfs-provisioner
+rules:
+  - apiGroups: ["seaweedfs.sonne.zone"]
+    resources:
+      - seaweedfsbuckets
+      - seaweedfsbuckets/status
+      - seaweedfsbuckets/finalizers
+      - seaweedfsusers
+      - seaweedfsusers/status
+      - seaweedfsusers/finalizers
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create"]
+  # kopf watches namespaces and CRDs to discover what to observe
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["list", "watch"]
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: seaweedfs-provisioner
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: seaweedfs-provisioner
+subjects:
+  - kind: ServiceAccount
+    name: seaweedfs-provisioner
+    namespace: {{ .Release.Namespace }}

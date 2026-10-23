@@ -36,3 +36,16 @@ jobs:
 
       - name: Test
         run: uv run pytest
+
+  helm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Helm lint
+        run: helm lint chart/seaweedfs-provisioner
+
+      - name: Helm template
+        run: helm template test chart/seaweedfs-provisioner
