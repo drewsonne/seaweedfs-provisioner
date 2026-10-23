@@ -1,6 +1,6 @@
 """seaweedfs-provisioner operator entry point.
 
-Handler modules are imported here as they are added.
+Importing the handler modules registers their kopf decorators.
 """
 
 from __future__ import annotations
@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+import buckets  # noqa: F401 — registers SeaweedfsBucket handlers
 import kopf
 
 
