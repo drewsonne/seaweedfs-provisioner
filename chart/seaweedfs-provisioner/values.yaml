@@ -1,5 +1,5 @@
 image:
-  repository: ghcr.io/drewsonne/seaweedfs-provisioner
+  repository: drewsonne/seaweedfs-provisioner
   # Defaults to the chart's appVersion
   tag: ""
 
