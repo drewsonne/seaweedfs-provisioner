@@ -11,6 +11,11 @@ from typing import Any
 import buckets  # noqa: F401 — registers SeaweedfsBucket handlers
 import kopf
 import users  # noqa: F401  (registers handlers)
+from logs import configure_logging
+
+# kopf's CLI adds its text handler to root before importing this module;
+# replace it so kopf's own lines are JSON too.
+configure_logging()
 
 
 @kopf.on.startup()
